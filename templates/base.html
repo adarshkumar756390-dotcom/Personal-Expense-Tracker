@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}FinTrack - Personal Expense & Budget Tracker{% endblock %}</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        },
+                        emerald: {
+                            500: '#10b981',
+                            600: '#059669'
+                        },
+                        rose: {
+                            500: '#f43f5e',
+                            600: '#e11d48'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+</head>
+<body class="h-full bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 font-['Inter'] transition-colors duration-200 flex flex-col min-h-screen">
+
+    <!-- TOP NAVIGATION BAR -->
+    <header class="sticky top-0 z-40 w-full border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <!-- Logo & Brand -->
+                <div class="flex items-center gap-3">
+                    <a href="{{ url_for('index') }}" class="flex items-center gap-2 group">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
+                            <i class="fa-solid fa-wallet text-lg"></i>
+                        </div>
+                        <div>
+                            <span class="text-xl font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent">FinTrack</span>
+                            <span class="text-[10px] uppercase tracking-wider font-bold block text-slate-400 -mt-1">Expense Manager</span>
+                        </div>
+                    </a>
+
+                    <!-- Desktop Navigation Links -->
+                    <nav class="hidden md:flex items-center ml-8 space-x-1">
+                        <a href="{{ url_for('index') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if active_page == 'dashboard' %}bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 font-semibold{% else %}text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                            <i class="fa-solid fa-chart-line mr-1.5 opacity-80"></i> Dashboard
+                        </a>
+                        <a href="{{ url_for('transactions') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if active_page == 'transactions' %}bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 font-semibold{% else %}text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                            <i class="fa-solid fa-receipt mr-1.5 opacity-80"></i> Transactions
+                        </a>
+                        <a href="{{ url_for('budgets') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if active_page == 'budgets' %}bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 font-semibold{% else %}text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                            <i class="fa-solid fa-bullseye mr-1.5 opacity-80"></i> Budgets
+                        </a>
+                        <a href="{{ url_for('analytics') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if active_page == 'analytics' %}bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 font-semibold{% else %}text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+                            <i class="fa-solid fa-chart-pie mr-1.5 opacity-80"></i> Analytics
+                        </a>
+                    </nav>
+                </div>
+
+                <!-- Right Header Actions -->
+                <div class="flex items-center gap-3">
+                    <!-- Quick Add Modal Trigger -->
+                    <button onclick="openAddModal()" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium shadow-sm shadow-indigo-600/30 transition-all active:scale-95">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                        <span class="hidden sm:inline">Add Record</span>
+                    </button>
+
+                    <!-- Theme Switcher -->
+                    <button id="themeToggle" class="w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Toggle Light/Dark Theme">
+                        <i class="fa-solid fa-moon text-sm dark:hidden"></i>
+                        <i class="fa-solid fa-sun text-sm hidden dark:inline"></i>
+                    </button>
+
+                    <!-- Mobile Menu Button -->
+                    <button id="mobileMenuBtn" class="md:hidden w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
+                        <i class="fa-solid fa-bars text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile Navigation Dropdown -->
+            <div id="mobileMenu" class="hidden md:hidden pb-4 pt-2 border-t border-slate-200 dark:border-slate-800 space-y-1">
+                <a href="{{ url_for('index') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if active_page == 'dashboard' %}bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300{% else %}text-slate-600 dark:text-slate-300{% endif %}">
+                    <i class="fa-solid fa-chart-line mr-2"></i> Dashboard
+                </a>
+                <a href="{{ url_for('transactions') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if active_page == 'transactions' %}bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300{% else %}text-slate-600 dark:text-slate-300{% endif %}">
+                    <i class="fa-solid fa-receipt mr-2"></i> Transactions
+                </a>
+                <a href="{{ url_for('budgets') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if active_page == 'budgets' %}bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300{% else %}text-slate-600 dark:text-slate-300{% endif %}">
+                    <i class="fa-solid fa-bullseye mr-2"></i> Budgets
+                </a>
+                <a href="{{ url_for('analytics') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if active_page == 'analytics' %}bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300{% else %}text-slate-600 dark:text-slate-300{% endif %}">
+                    <i class="fa-solid fa-chart-pie mr-2"></i> Analytics
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- FLASH MESSAGES -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="space-y-2">
+                    {% for category, message in messages %}
+                        <div class="flex items-center justify-between p-4 rounded-xl text-sm font-medium shadow-sm transition-all duration-300 {% if category == 'error' %}bg-rose-50 border border-rose-200 text-rose-800 dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-300{% elif category == 'success' %}bg-emerald-50 border border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-900/60 dark:text-emerald-300{% else %}bg-indigo-50 border border-indigo-200 text-indigo-800 dark:bg-indigo-950/40 dark:border-indigo-900/60 dark:text-indigo-300{% endif %}" role="alert">
+                            <div class="flex items-center gap-3">
+                                {% if category == 'error' %}
+                                    <i class="fa-solid fa-circle-exclamation text-rose-500 text-base"></i>
+                                {% elif category == 'success' %}
+                                    <i class="fa-solid fa-circle-check text-emerald-500 text-base"></i>
+                                {% else %}
+                                    <i class="fa-solid fa-circle-info text-indigo-500 text-base"></i>
+                                {% endif %}
+                                <span>{{ message }}</span>
+                            </div>
+                            <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                                <i class="fa-solid fa-xmark text-base"></i>
+                            </button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- MAIN CONTENT BODY -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-6 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
+            <div class="flex items-center gap-2">
+                <span class="font-semibold text-slate-700 dark:text-slate-300">FinTrack</span>
+                <span>•</span>
+                <span>Second Year College Portfolio Project</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <form action="{{ url_for('seed_demo') }}" method="POST" class="inline" onsubmit="return confirm('Load realistic sample demo transactions and budgets?')">
+                    <button type="submit" class="hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 font-medium transition-colors">
+                        <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i> Load Demo Data
+                    </button>
+                </form>
+                <span>•</span>
+                <a href="{{ url_for('export_csv') }}" class="hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 transition-colors">
+                    <i class="fa-solid fa-file-csv text-emerald-500"></i> Export CSV
+                </a>
+                <span>•</span>
+                <a href="https://github.com/adarshkumar756390-dotcom" target="_blank" class="hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 transition-colors">
+                    <i class="fa-brands fa-github text-slate-700 dark:text-slate-200"></i> GitHub
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- GLOBAL ADD TRANSACTION MODAL -->
+    <div id="addModal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl transform transition-all">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-100 dark:border-slate-800">
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-sm">
+                        <i class="fa-solid fa-plus"></i>
+                    </span>
+                    Add New Record
+                </h3>
+                <button onclick="closeAddModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form action="{{ url_for('add_transaction_route') }}" method="POST" class="mt-4 space-y-4">
+                <!-- Type Segment Selector -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Transaction Type</label>
+                    <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="type" value="Expense" checked class="peer sr-only" onchange="toggleCategoryOptions('Expense')">
+                            <div class="py-2 text-center text-sm font-semibold rounded-lg text-slate-600 dark:text-slate-300 peer-checked:bg-rose-500 peer-checked:text-white transition-all shadow-sm">
+                                <i class="fa-solid fa-arrow-trend-down mr-1"></i> Expense
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="type" value="Income" class="peer sr-only" onchange="toggleCategoryOptions('Income')">
+                            <div class="py-2 text-center text-sm font-semibold rounded-lg text-slate-600 dark:text-slate-300 peer-checked:bg-emerald-500 peer-checked:text-white transition-all shadow-sm">
+                                <i class="fa-solid fa-arrow-trend-up mr-1"></i> Income
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Title / Description -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Title / Purpose *</label>
+                    <input type="text" name="title" required placeholder="e.g., Mess Food, Uber ride, Stipend..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                </div>
+
+                <!-- Amount & Date (2 columns) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Amount (₹) *</label>
+                        <div class="relative">
+                            <span class="absolute left-3.5 top-2.5 text-slate-400 font-semibold text-sm">₹</span>
+                            <input type="number" step="0.01" min="0.01" name="amount" required placeholder="0.00" class="w-full pl-8 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-semibold">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Date *</label>
+                        <input type="date" name="date" value="{{ today_date }}" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                    </div>
+                </div>
+
+                <!-- Category & Payment Method (2 columns) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Category *</label>
+                        <select name="category" id="categorySelect" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                            <optgroup label="Expense Categories" id="expenseOptGroup">
+                                {% for cat in expense_categories %}
+                                    <option value="{{ cat }}">{{ cat }}</option>
+                                {% endfor %}
+                            </optgroup>
+                            <optgroup label="Income Categories" id="incomeOptGroup" class="hidden">
+                                {% for cat in income_categories %}
+                                    <option value="{{ cat }}">{{ cat }}</option>
+                                {% endfor %}
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Payment Method *</label>
+                        <select name="payment_method" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                            {% for pm in payment_methods %}
+                                <option value="{{ pm }}">{{ pm }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Notes / Tags -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Notes (Optional)</label>
+                    <input type="text" name="notes" placeholder="e.g., Shared with friend, invoice ref..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                </div>
+
+                <!-- Form Buttons -->
+                <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <button type="button" onclick="closeAddModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-medium transition-colors">Cancel</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-md shadow-indigo-600/30 transition-all">Save Transaction</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN JAVASCRIPT -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

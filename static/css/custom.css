@@ -1,0 +1,63 @@
+/* FinTrack - Custom CSS Styles & Animations */
+
+/* Smooth Transitions */
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Glassmorphism Accents */
+.glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.dark .glass-card {
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: #334155;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Form Inputs Focus Ring Animation */
+input, select, textarea {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+/* Table Hover Effects */
+tbody tr {
+    transition: background-color 0.15s ease-in-out;
+}
+
+/* Print Styling */
+@media print {
+    header, footer, button, .no-print {
+        display: none !important;
+    }
+    body {
+        background: white !important;
+        color: black !important;
+    }
+}

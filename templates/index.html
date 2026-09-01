@@ -1,0 +1,404 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - FinTrack Expense Tracker{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- TOP DASHBOARD HEADER & MONTH FILTER -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+                <span>Financial Overview</span>
+                <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                    Live SQLite
+                </span>
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">Track your spending patterns, analyze cash flow, and achieve your budget goals.</p>
+        </div>
+
+        <!-- Month Filter Selector Form -->
+        <form method="GET" action="{{ url_for('index') }}" class="flex items-center gap-2">
+            <div class="relative">
+                <input type="month" name="month" value="{{ selected_month }}" onchange="this.form.submit()" class="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer">
+            </div>
+            <a href="{{ url_for('index') }}" class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold" title="Reset to Current Month">
+                <i class="fa-solid fa-rotate-right"></i>
+            </a>
+        </form>
+    </div>
+
+    <!-- 4 KPI SUMMARY CARDS -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        
+        <!-- Total Income Card -->
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group hover:border-emerald-500/50 transition-all">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Income</span>
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-sm shadow-sm group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-arrow-trend-up"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
+                    ₹{{ "{:,.2f}".format(summary.total_income) }}
+                </div>
+                <div class="flex items-center gap-1.5 mt-2 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Credited this month</span>
+                </div>
+            </div>
+            <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-emerald-500/5 rounded-full blur-xl group-hover:bg-emerald-500/10 transition-colors"></div>
+        </div>
+
+        <!-- Total Expenses Card -->
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group hover:border-rose-500/50 transition-all">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Expenses</span>
+                <div class="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center text-sm shadow-sm group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-arrow-trend-down"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
+                    ₹{{ "{:,.2f}".format(summary.total_expense) }}
+                </div>
+                <div class="flex items-center gap-1.5 mt-2 text-xs text-rose-600 dark:text-rose-400 font-medium">
+                    <i class="fa-solid fa-receipt"></i>
+                    <span>{{ summary.tx_count }} Transactions</span>
+                </div>
+            </div>
+            <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-rose-500/5 rounded-full blur-xl group-hover:bg-rose-500/10 transition-colors"></div>
+        </div>
+
+        <!-- Net Savings Balance Card -->
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group hover:border-indigo-500/50 transition-all">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Net Balance</span>
+                <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-sm shadow-sm group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-wallet"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="text-2xl sm:text-3xl font-extrabold {% if summary.net_balance >= 0 %}text-slate-900 dark:text-white{% else %}text-rose-600 dark:text-rose-400{% endif %}">
+                    ₹{{ "{:,.2f}".format(summary.net_balance) }}
+                </div>
+                <div class="flex items-center gap-1.5 mt-2 text-xs font-medium {% if summary.net_balance >= 0 %}text-indigo-600 dark:text-indigo-400{% else %}text-rose-600 dark:text-rose-400{% endif %}">
+                    {% if summary.net_balance >= 0 %}
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <span>Positive Cashflow</span>
+                    {% else %}
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>Deficit this month</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-indigo-500/5 rounded-full blur-xl group-hover:bg-indigo-500/10 transition-colors"></div>
+        </div>
+
+        <!-- Savings Rate Card -->
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group hover:border-amber-500/50 transition-all">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Savings Rate</span>
+                <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center text-sm shadow-sm group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-piggy-bank"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
+                    {{ summary.savings_rate }}%
+                </div>
+                <div class="flex items-center gap-1.5 mt-2 text-xs text-amber-600 dark:text-amber-400 font-medium">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Of total income saved</span>
+                </div>
+            </div>
+            <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-amber-500/5 rounded-full blur-xl group-hover:bg-amber-500/10 transition-colors"></div>
+        </div>
+    </div>
+
+    <!-- BUDGET STATUS BANNER (If Budgets configured) -->
+    {% if budget_data.budgets %}
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                <div class="flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-sm">
+                        <i class="fa-solid fa-bullseye"></i>
+                    </span>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Overall Monthly Budget Utilization</h3>
+                        <p class="text-xs text-slate-500">Spent ₹{{ "{:,.2f}".format(budget_data.total_spent) }} of ₹{{ "{:,.2f}".format(budget_data.total_budgeted) }} budgeted</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-sm font-bold {% if budget_data.overall_percentage >= 100 %}text-rose-600{% elif budget_data.overall_percentage >= 80 %}text-amber-500{% else %}text-emerald-600{% endif %}">
+                        {{ budget_data.overall_percentage }}%
+                    </span>
+                    <a href="{{ url_for('budgets', month=selected_month) }}" class="text-xs font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 hover:underline">
+                        Manage Budgets &rarr;
+                    </a>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-3 overflow-hidden">
+                <div class="h-full rounded-full transition-all duration-500 {% if budget_data.overall_percentage >= 100 %}bg-rose-500{% elif budget_data.overall_percentage >= 80 %}bg-amber-500{% else %}bg-emerald-500{% endif %}" style="width: {{ [budget_data.overall_percentage, 100]|min }}%"></div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- CHARTS SECTION: 2 COLUMNS -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Expense Category Breakdown Donut Chart (5 cols) -->
+        <div class="lg:col-span-5 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chart-pie text-indigo-500"></i>
+                    Expense by Category
+                </h3>
+                <span class="text-xs text-slate-400">{{ selected_month }}</span>
+            </div>
+
+            <div class="relative flex-grow flex items-center justify-center my-4 min-h-[250px]">
+                {% if category_spending %}
+                    <canvas id="categoryChart"></canvas>
+                {% else %}
+                    <div class="text-center py-8 text-slate-400">
+                        <i class="fa-solid fa-chart-pie text-4xl mb-2 opacity-30"></i>
+                        <p class="text-xs">No expense records found for this month.</p>
+                        <button onclick="openAddModal()" class="mt-3 text-xs text-indigo-600 font-semibold hover:underline">+ Add Expense</button>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Top Spending Categories List -->
+            {% if category_spending %}
+                <div class="space-y-2 mt-auto pt-3 border-t border-slate-100 dark:border-slate-800">
+                    {% for cat in category_spending[:3] %}
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="font-medium text-slate-700 dark:text-slate-300 truncate max-w-[160px]">{{ cat.category }}</span>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-slate-900 dark:text-white">₹{{ "{:,.2f}".format(cat.total) }}</span>
+                                <span class="text-slate-400">({{ cat.percentage }}%)</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Monthly Trends Bar/Line Chart (7 cols) -->
+        <div class="lg:col-span-7 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chart-column text-indigo-500"></i>
+                    6-Month Income vs Expense Trend
+                </h3>
+                <span class="text-xs text-slate-400">Historical Flow</span>
+            </div>
+
+            <div class="relative flex-grow flex items-center justify-center my-4 min-h-[250px]">
+                <canvas id="trendChart"></canvas>
+            </div>
+
+            <div class="flex items-center justify-center gap-6 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs font-semibold">
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                    <span class="text-slate-600 dark:text-slate-300">Income</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-rose-500"></span>
+                    <span class="text-slate-600 dark:text-slate-300">Expenses</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- RECENT TRANSACTIONS SECTION -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div class="p-5 flex items-center justify-between border-b border-slate-100 dark:border-slate-800">
+            <div>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-receipt text-indigo-500"></i>
+                    Recent Transactions
+                </h3>
+                <p class="text-xs text-slate-400 mt-0.5">Latest recorded financial entries</p>
+            </div>
+            <a href="{{ url_for('transactions') }}" class="text-xs font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 hover:underline flex items-center gap-1">
+                View All &rarr;
+            </a>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-800/50 text-[11px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 dark:border-slate-800">
+                        <th class="py-3 px-5">Title & Notes</th>
+                        <th class="py-3 px-4">Category</th>
+                        <th class="py-3 px-4">Payment Method</th>
+                        <th class="py-3 px-4">Date</th>
+                        <th class="py-3 px-5 text-right">Amount</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 text-sm">
+                    {% if recent_transactions %}
+                        {% for tx in recent_transactions %}
+                            <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                                <td class="py-3.5 px-5">
+                                    <div class="font-semibold text-slate-900 dark:text-white">{{ tx.title }}</div>
+                                    {% if tx.notes %}
+                                        <div class="text-xs text-slate-400 truncate max-w-xs">{{ tx.notes }}</div>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3.5 px-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                        {{ tx.category }}
+                                    </span>
+                                </td>
+                                <td class="py-3.5 px-4 text-xs text-slate-500 dark:text-slate-400">
+                                    {{ tx.payment_method }}
+                                </td>
+                                <td class="py-3.5 px-4 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                                    {{ tx.date }}
+                                </td>
+                                <td class="py-3.5 px-5 text-right font-bold whitespace-nowrap {% if tx.type == 'Income' %}text-emerald-600 dark:text-emerald-400{% else %}text-rose-600 dark:text-rose-400{% endif %}">
+                                    {% if tx.type == 'Income' %}+{% else %}-{% endif %} ₹{{ "{:,.2f}".format(tx.amount) }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="py-8 text-center text-slate-400 text-xs">
+                                No transactions recorded yet. Click <strong>"Add Record"</strong> or <strong>"Load Demo Data"</strong> in the footer to get started.
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Render Category Chart
+        const catLabels = {{ category_spending|map(attribute='category')|list|tojson }};
+        const catData = {{ category_spending|map(attribute='total')|list|tojson }};
+        
+        if (catLabels.length > 0) {
+            const ctxCat = document.getElementById('categoryChart').getContext('2d');
+            new Chart(ctxCat, {
+                type: 'doughnut',
+                data: {
+                    labels: catLabels,
+                    datasets: [{
+                        data: catData,
+                        backgroundColor: [
+                            '#6366f1', '#ec4899', '#f59e0b', '#10b981',
+                            '#3b82f6', '#8b5cf6', '#14b8a6', '#f43f5e',
+                            '#06b6d4', '#84cc16', '#a855f7', '#64748b'
+                        ],
+                        borderWidth: 2,
+                        borderColor: document.documentElement.classList.contains('dark') ? '#0f172a' : '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 12,
+                                font: { size: 11 },
+                                color: document.documentElement.classList.contains('dark') ? '#94a3b8' : '#64748b'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let val = context.raw || 0;
+                                    return ' ' + context.label + ': ₹' + val.toLocaleString('en-IN', {minimumFractionDigits: 2});
+                                }
+                            }
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+        }
+
+        // Render Monthly Trends Chart
+        const trendLabels = {{ trends.labels|tojson }};
+        const incomeData = {{ trends.income|tojson }};
+        const expenseData = {{ trends.expense|tojson }};
+
+        const ctxTrend = document.getElementById('trendChart').getContext('2d');
+        new Chart(ctxTrend, {
+            type: 'bar',
+            data: {
+                labels: trendLabels,
+                datasets: [
+                    {
+                        label: 'Income (₹)',
+                        data: incomeData,
+                        backgroundColor: '#10b981',
+                        borderRadius: 6,
+                        barPercentage: 0.6,
+                        categoryPercentage: 0.7
+                    },
+                    {
+                        label: 'Expenses (₹)',
+                        data: expenseData,
+                        backgroundColor: '#f43f5e',
+                        borderRadius: 6,
+                        barPercentage: 0.6,
+                        categoryPercentage: 0.7
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let val = context.raw || 0;
+                                return ' ' + context.dataset.label + ': ₹' + val.toLocaleString('en-IN', {minimumFractionDigits: 2});
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            color: document.documentElement.classList.contains('dark') ? '#94a3b8' : '#64748b',
+                            font: { size: 11 }
+                        }
+                    },
+                    y: {
+                        grid: {
+                            color: document.documentElement.classList.contains('dark') ? '#1e293b' : '#f1f5f9'
+                        },
+                        ticks: {
+                            color: document.documentElement.classList.contains('dark') ? '#94a3b8' : '#64748b',
+                            font: { size: 11 },
+                            callback: function(value) {
+                                return '₹' + (value >= 1000 ? (value/1000) + 'k' : value);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

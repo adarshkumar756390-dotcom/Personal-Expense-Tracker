@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Budget Planner - FinTrack{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- HEADER & MONTH SELECTOR -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+                <i class="fa-solid fa-bullseye text-indigo-500"></i>
+                <span>Monthly Budget Goals</span>
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">Set spending thresholds per category to avoid overspending and grow your savings.</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <form method="GET" action="{{ url_for('budgets') }}" class="flex items-center gap-2">
+                <input type="month" name="month" value="{{ selected_month }}" onchange="this.form.submit()" class="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer">
+            </form>
+            <button onclick="document.getElementById('setBudgetCard').scrollIntoView({behavior: 'smooth'})" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm shadow-indigo-600/30 transition-all">
+                <i class="fa-solid fa-plus"></i>
+                <span>Set Budget</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- OVERALL SUMMARY KPI CARDS -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Budgeted</span>
+            <div class="text-2xl font-extrabold text-slate-900 dark:text-white mt-2">
+                ₹{{ "{:,.2f}".format(budget_data.total_budgeted) }}
+            </div>
+            <div class="text-xs text-slate-400 mt-1">{{ budget_data.budgets|length }} Categories tracked</div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Spent</span>
+            <div class="text-2xl font-extrabold text-slate-900 dark:text-white mt-2">
+                ₹{{ "{:,.2f}".format(budget_data.total_spent) }}
+            </div>
+            <div class="text-xs {% if budget_data.overall_percentage >= 100 %}text-rose-500 font-bold{% elif budget_data.overall_percentage >= 80 %}text-amber-500 font-bold{% else %}text-emerald-500{% endif %} mt-1">
+                {{ budget_data.overall_percentage }}% utilized
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Remaining Budget</span>
+            <div class="text-2xl font-extrabold {% if budget_data.total_budgeted - budget_data.total_spent >= 0 %}text-emerald-600 dark:text-emerald-400{% else %}text-rose-600 dark:text-rose-400{% endif %} mt-2">
+                ₹{{ "{:,.2f}".format(budget_data.total_budgeted - budget_data.total_spent) }}
+            </div>
+            <div class="text-xs text-slate-400 mt-1">For {{ selected_month }}</div>
+        </div>
+    </div>
+
+    <!-- CATEGORY BUDGETS GRID -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+        {% if budget_data.budgets %}
+            {% for b in budget_data.budgets %}
+                <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 relative overflow-hidden group">
+                    
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-sm font-semibold">
+                                <i class="fa-solid fa-tags"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-slate-900 dark:text-white text-sm">{{ b.category }}</h3>
+                                <p class="text-xs text-slate-400">Budget: ₹{{ "{:,.2f}".format(b.budget) }}</p>
+                            </div>
+                        </div>
+
+                        <!-- Status Badge & Delete Action -->
+                        <div class="flex items-center gap-2">
+                            {% if b.status == 'danger' %}
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-200 dark:border-rose-900">
+                                    Over Budget
+                                </span>
+                            {% elif b.status == 'warning' %}
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-200 dark:border-amber-900">
+                                    Near Limit
+                                </span>
+                            {% else %}
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900">
+                                    On Track
+                                </span>
+                            {% endif %}
+
+                            <form action="{{ url_for('delete_budget_route', budget_id=b.id) }}" method="POST" class="inline" onsubmit="return confirm('Remove budget for {{ b.category }}?')">
+                                <input type="hidden" name="month" value="{{ selected_month }}">
+                                <button type="submit" class="p-1 rounded-lg text-slate-300 hover:text-rose-500 transition-colors" title="Delete budget">
+                                    <i class="fa-solid fa-trash-can text-xs"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div>
+                        <div class="flex justify-between text-xs mb-1.5 font-medium">
+                            <span class="text-slate-500 dark:text-slate-400">Spent: ₹{{ "{:,.2f}".format(b.spent) }}</span>
+                            <span class="{% if b.status == 'danger' %}text-rose-600 font-bold{% elif b.status == 'warning' %}text-amber-500 font-bold{% else %}text-emerald-600{% endif %}">
+                                {{ b.percentage }}%
+                            </span>
+                        </div>
+                        <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500 {% if b.status == 'danger' %}bg-rose-500{% elif b.status == 'warning' %}bg-amber-500{% else %}bg-emerald-500{% endif %}" style="width: {{ [b.percentage, 100]|min }}%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Footer Info -->
+                    <div class="flex justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <span>
+                            {% if b.remaining >= 0 %}
+                                Remaining: ₹{{ "{:,.2f}".format(b.remaining) }}
+                            {% else %}
+                                Exceeded by: ₹{{ "{:,.2f}".format(b.remaining|abs) }}
+                            {% endif %}
+                        </span>
+                        <span>{{ selected_month }}</span>
+                    </div>
+
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="md:col-span-2 bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 text-center text-slate-400 space-y-2">
+                <i class="fa-solid fa-bullseye text-4xl opacity-30"></i>
+                <h4 class="font-bold text-slate-700 dark:text-slate-300 text-sm">No Budgets Configured for {{ selected_month }}</h4>
+                <p class="text-xs">Set spending limits below to begin tracking your financial goals.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- SET / UPDATE BUDGET CARD -->
+    <div id="setBudgetCard" class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm max-w-xl">
+        <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-4">
+            <span class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-xs">
+                <i class="fa-solid fa-sliders"></i>
+            </span>
+            Set or Update Category Budget
+        </h3>
+
+        <form method="POST" action="{{ url_for('budgets', month=selected_month) }}" class="space-y-4">
+            <input type="hidden" name="month" value="{{ selected_month }}">
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Expense Category</label>
+                    <select name="category" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        {% for cat in expense_categories %}
+                            <option value="{{ cat }}">{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Monthly Limit (₹)</label>
+                    <div class="relative">
+                        <span class="absolute left-3.5 top-2.5 text-slate-400 font-semibold text-sm">₹</span>
+                        <input type="number" step="100" min="100" name="amount" required placeholder="e.g. 5000" class="w-full pl-8 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-2">
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-md shadow-indigo-600/30 transition-all">
+                    Save Budget Limit
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Transaction - FinTrack{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+
+    <!-- BACK BUTTON & TITLE -->
+    <div class="flex items-center gap-3">
+        <a href="{{ url_for('transactions') }}" class="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors">
+            <i class="fa-solid fa-arrow-left text-sm"></i>
+        </a>
+        <div>
+            <h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Edit Transaction #{{ tx.id }}</h1>
+            <p class="text-xs text-slate-400">Update transaction details and re-categorize</p>
+        </div>
+    </div>
+
+    <!-- EDIT FORM CARD -->
+    <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <form method="POST" action="{{ url_for('edit_transaction_route', tx_id=tx.id) }}" class="space-y-5">
+            
+            <!-- Type Selector -->
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Transaction Type</label>
+                <div class="grid grid-cols-2 gap-3 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="type" value="Expense" {% if tx.type == 'Expense' %}checked{% endif %} class="peer sr-only" onchange="toggleCategoryOptions('Expense')">
+                        <div class="py-2.5 text-center text-sm font-semibold rounded-lg text-slate-600 dark:text-slate-300 peer-checked:bg-rose-500 peer-checked:text-white transition-all shadow-sm">
+                            <i class="fa-solid fa-arrow-trend-down mr-1"></i> Expense
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="type" value="Income" {% if tx.type == 'Income' %}checked{% endif %} class="peer sr-only" onchange="toggleCategoryOptions('Income')">
+                        <div class="py-2.5 text-center text-sm font-semibold rounded-lg text-slate-600 dark:text-slate-300 peer-checked:bg-emerald-500 peer-checked:text-white transition-all shadow-sm">
+                            <i class="fa-solid fa-arrow-trend-up mr-1"></i> Income
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Title -->
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Title / Purpose *</label>
+                <input type="text" name="title" value="{{ tx.title }}" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            </div>
+
+            <!-- Amount & Date -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Amount (₹) *</label>
+                    <div class="relative">
+                        <span class="absolute left-3.5 top-2.5 text-slate-400 font-semibold text-sm">₹</span>
+                        <input type="number" step="0.01" min="0.01" name="amount" value="{{ tx.amount }}" required class="w-full pl-8 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Date *</label>
+                    <input type="date" name="date" value="{{ tx.date }}" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+            </div>
+
+            <!-- Category & Payment Method -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Category *</label>
+                    <select name="category" id="categorySelect" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <optgroup label="Expense Categories" id="expenseOptGroup" {% if tx.type == 'Income' %}class="hidden"{% endif %}>
+                            {% for cat in expense_categories %}
+                                <option value="{{ cat }}" {% if tx.category == cat %}selected{% endif %}>{{ cat }}</option>
+                            {% endfor %}
+                        </optgroup>
+                        <optgroup label="Income Categories" id="incomeOptGroup" {% if tx.type == 'Expense' %}class="hidden"{% endif %}>
+                            {% for cat in income_categories %}
+                                <option value="{{ cat }}" {% if tx.category == cat %}selected{% endif %}>{{ cat }}</option>
+                            {% endfor %}
+                        </optgroup>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Payment Method *</label>
+                    <select name="payment_method" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        {% for pm in payment_methods %}
+                            <option value="{{ pm }}" {% if tx.payment_method == pm %}selected{% endif %}>{{ pm }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Notes (Optional)</label>
+                <input type="text" name="notes" value="{{ tx.notes or '' }}" placeholder="Add optional reference details..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <a href="{{ url_for('transactions') }}" class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold transition-colors">
+                    Cancel
+                </a>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-md shadow-indigo-600/30 transition-all">
+                    Save Changes
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+{% endblock %}

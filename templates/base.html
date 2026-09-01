@@ -79,12 +79,20 @@
                 </div>
 
                 <!-- Right Header Actions -->
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 sm:gap-3">
                     <!-- Quick Add Modal Trigger -->
                     <button onclick="openAddModal()" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium shadow-sm shadow-indigo-600/30 transition-all active:scale-95">
                         <i class="fa-solid fa-plus text-xs"></i>
                         <span class="hidden sm:inline">Add Record</span>
                     </button>
+
+                    <!-- Reset Data Button -->
+                    <form action="{{ url_for('reset_data') }}" method="POST" class="inline" onsubmit="return confirm('⚠️ Are you sure you want to reset all data? All transactions and budgets will be permanently deleted.')">
+                        <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:border-rose-300 dark:hover:border-rose-800 text-xs font-semibold transition-all" title="Reset All Data & Start Fresh">
+                            <i class="fa-solid fa-rotate-left text-xs"></i>
+                            <span class="hidden sm:inline">Reset</span>
+                        </button>
+                    </form>
 
                     <!-- Theme Switcher -->
                     <button id="themeToggle" class="w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Toggle Light/Dark Theme">

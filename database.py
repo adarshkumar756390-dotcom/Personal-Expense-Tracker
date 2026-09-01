@@ -359,6 +359,14 @@ def get_monthly_trends(months_count=6):
     rows = cursor.fetchall()
     conn.close()
 
+    if not rows:
+        today = datetime.now()
+        return {
+            "labels": [today.strftime("%b %Y")],
+            "income": [0.0],
+            "expense": [0.0]
+        }
+
     # Reverse to have chronological order (oldest to newest)
     rows = list(reversed(rows))
     

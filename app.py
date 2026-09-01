@@ -319,7 +319,7 @@ def export_csv():
 def seed_demo():
     """Loads realistic sample demo data for quick review and testing."""
     db.seed_demo_data()
-    flash("🎉 Loaded sample demo data with realistic student/personal expenses and budgets!", "success")
+    flash("Loaded sample demo data with realistic student/personal expenses and budgets!", "success")
     return redirect(url_for("index"))
 
 
@@ -359,6 +359,6 @@ def api_chart_data():
 if __name__ == "__main__":
     # Run locally on port 5000 in debug mode
     print("\n" + "="*60)
-    print("🚀 FinTrack Server Running at: http://127.0.0.1:5000")
+    print(">> FinTrack Server Running at: http://127.0.0.1:5000")
     print("="*60 + "\n")
     app.run(host="127.0.0.1", port=5000, debug=True)
